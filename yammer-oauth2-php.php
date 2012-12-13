@@ -4,8 +4,8 @@
  *
  * Example configuration array passed to constructor:
  *
- *    $config['consumer_key'] = '1ABCdefhiJKLmnop';
- *    $config['consumer_secret']   = 'ABCdefhi_JKLmnop';
+ *    $config['consumer_key'] = 'q3ATfoYCNAq91dKgbzPFdA';
+ *    $config['consumer_secret']   = '  HernHAXUbs31bCH8mxDzJn4CwwLOdIp0RWrYYntrko';
  *    $config['callbackUrl']  = 'http://' . $_SERVER['SERVER_NAME'] . '/yammer/callback/';
  *
  *     $yammer = new YammerPHP($config);
@@ -149,14 +149,25 @@ class YammerPHP {
 	 * @param array $data 
 	 * @return $return
 	 */
-	private function request($url, $data = array()) {
+	private function request($url, $data = array(),$isPost = false) {
 
 		$headers = array();
 		$headers[] = "Authorization: Bearer " . $this->oauthToken;
 
 		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, $url . '?' . http_build_query($data) );
+		echo "\ndata stream: " . ($data_stream = $url . '?' . http_build_query($data) );
+		//curl_setopt($ch, CURLOPT_URL, $data_stream);
 		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+		
+		if($isPost)
+		{
+		    curl_setopt($ch, CURLOPT_POST,TRUE);
+		    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+		    curl_setopt($ch, CURLOPT_URL, $url);
+		}
+		else
+    		curl_setopt($ch, CURLOPT_URL, $data_stream);
+		
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 		$output = curl_exec($ch);
 
@@ -172,6 +183,33 @@ class YammerPHP {
 		
 		return $return;
 	}
+	
+	/**
+	 * @see http://developer.yammer.com/restapi/
+	 */
+    function postMessage($body,$group_id=0,$replied_to_id = 0) {
+		$url = 'https://www.yammer.com/api/v1/messages.json';
+		$data = array(
+		    'body' => $body,
+		);
+		
+		if($group_id)
+   	        $data['group_id'] =  $group_id;
+   	        
+   	    if($replied_to_id)
+   	        $data['replied_to_id'] = $replied_to_id;
+
+		error_log("posting to $url");
+		try {
+			$result = $this->request($url,$data,true);
+			#print_r($result);
+			$msg =  $result->messages[0];
+			return $msg->id;
+		} catch (YammerPHPException $e) {
+			return false;
+		}
+	}
+	
 
 }
 
